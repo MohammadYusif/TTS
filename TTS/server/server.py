@@ -101,17 +101,33 @@ if args.vocoder_path is not None:
     vocoder_config_path = args.vocoder_config_path
 
 # load models
-synthesizer = Synthesizer(
-    tts_checkpoint=model_path,
-    tts_config_path=config_path,
-    tts_speakers_file=speakers_file_path,
-    tts_languages_file=None,
-    vocoder_checkpoint=vocoder_path,
-    vocoder_config=vocoder_config_path,
-    encoder_checkpoint="",
-    encoder_config="",
-    use_cuda=args.use_cuda,
-)
+# When model_path points to a directory (e.g. xtts, bark, tortoise-v2), the config is
+# co-located inside that directory.  In that case we must use the model_dir argument so
+# the Synthesizer can locate config.json on its own; passing a directory as
+# tts_checkpoint with a None tts_config_path would cause a TypeError in load_config.
+if model_path and os.path.isdir(model_path) and config_path is None:
+    synthesizer = Synthesizer(
+        model_dir=model_path,
+        tts_speakers_file=speakers_file_path,
+        tts_languages_file=None,
+        vocoder_checkpoint=vocoder_path,
+        vocoder_config=vocoder_config_path,
+        encoder_checkpoint="",
+        encoder_config="",
+        use_cuda=args.use_cuda,
+    )
+else:
+    synthesizer = Synthesizer(
+        tts_checkpoint=model_path,
+        tts_config_path=config_path,
+        tts_speakers_file=speakers_file_path,
+        tts_languages_file=None,
+        vocoder_checkpoint=vocoder_path,
+        vocoder_config=vocoder_config_path,
+        encoder_checkpoint="",
+        encoder_config="",
+        use_cuda=args.use_cuda,
+    )
 
 use_multi_speaker = hasattr(synthesizer.tts_model, "num_speakers") and (
     synthesizer.tts_model.num_speakers > 1 or synthesizer.tts_speakers_file is not None
